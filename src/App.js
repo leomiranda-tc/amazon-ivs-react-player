@@ -1,24 +1,23 @@
-import logo from './logo.svg';
-import './App.css';
+import AmazonIvsReact from './amazon-ivs-react-player/index';
 
 function App() {
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <AmazonIvsReact
+      width="100%"
+      height="100%"
+
+      // ref={setRef}
+      controls={true}
+
+      url={"https://fcc3ddae59ed.us-west-2.playback.live-video.net/api/video/v1/us-west-2.893648527354.channel.xhP3ExfcX8ON.m3u8"}
+      playing={true}
+      playbackRate={1}
+
+      // onProgress={(e) => console.log(e)}
+      // onDuration={(e) => console.log(e)}
+      // onEnded={(e) => console.log(e)}
+    />
   );
 }
 
