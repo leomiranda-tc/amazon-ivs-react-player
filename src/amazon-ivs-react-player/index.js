@@ -2,6 +2,7 @@ import React, {useEffect, useRef} from 'react';
 import * as IVSPlayer from 'amazon-ivs-player';
 
 function AmazonIvsReact({
+  liveStreaming = true,
   width = 'auto',
   height = 300,
   ref = (e) => {},
@@ -15,14 +16,13 @@ function AmazonIvsReact({
   onEnded = (e) => {},
 }) {
 
-    let player = null;
     const videoEl = useRef(null);
 
     useEffect(() => ref(videoEl) ,[videoEl, ref])
     
     useEffect(() => {
 
-        if (!player && IVSPlayer.isPlayerSupported && videoEl) {
+        if (liveStreaming && IVSPlayer.isPlayerSupported && videoEl) {
 
             const config = {
               wasmWorker: "https://player.live-video.net/1.2.0/amazon-ivs-wasmworker.min.js",
