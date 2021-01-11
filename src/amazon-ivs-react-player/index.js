@@ -1,11 +1,16 @@
-import React, {useEffect, useRef} from 'react';
+import React, {useEffect, useRef, useState, forwardRef} from 'react';
 import * as IVSPlayer from 'amazon-ivs-player';
 
-function AmazonIvsReact({
-  liveStreaming = true,
+
+const config = {
+  wasmWorker: "https://player.live-video.net/1.2.0/amazon-ivs-wasmworker.min.js",
+  wasmBinary: "https://player.live-video.net/1.2.0/amazon-ivs-wasmworker.min.wasm",
+}
+const player = IVSPlayer.create(config);
+
+const AmazonIvsReact = forwardRef(({
   width = 'auto',
   height = 300,
-  ref = (e) => {},
   controls = false,
   url = "",
   playing = false,
@@ -13,36 +18,56 @@ function AmazonIvsReact({
   muted = false,
   onProgress = (e) => {},
   onDuration = (e) => {},
-  onEnded = (e) => {},
-}) {
+  onEnded = () => {},
+  playerRef
+}, ref) => {
 
+    // const videoEl = useRef(null);
     const videoEl = useRef(null);
 
-    useEffect(() => ref(videoEl) ,[videoEl, ref])
-    
+    const round = (number, round = 0) => {
+      let factor = Math.pow(10, round);
+      return Math.round(number*factor) / factor
+    }
+
+    // monitoring ------
+    const createListeners = () => {
+      player.addEventListener(IVSPlayer.PlayerEventType.DURATION_CHANGED, (e) => {
+        onDuration(round(e, 4));
+      })
+      
+      player.addEventListener(IVSPlayer.PlayerEventType.TIME_UPDATE, (e) => {
+        let duration = player.getDuration()
+        onProgress({played: round(e / duration, 4), playedSeconds: round(e, 4)});
+        
+        if (player.getState() == "Ended") {
+          player.pause();
+          onEnded(player);
+        }
+      })
+    }
+    const removeListeners = () => {
+      player.removeEventListener(IVSPlayer.PlayerEventType.DURATION_CHANGED, (e) => {})
+      player.removeEventListener(IVSPlayer.PlayerEventType.TIME_UPDATE, (e) => {})
+    }
+
+
+    // effects -----
+    useEffect(() => (playing ? player.play() : player.pause()), [playing])
+    useEffect(() => player.setPlaybackRate(playbackRate), [playbackRate])
+    useEffect(() => player.load(url), [url])
     useEffect(() => {
 
-        if (liveStreaming && IVSPlayer.isPlayerSupported && videoEl) {
+      ref(player)
 
-            const config = {
-              wasmWorker: "https://player.live-video.net/1.2.0/amazon-ivs-wasmworker.min.js",
-              wasmBinary: "https://player.live-video.net/1.2.0/amazon-ivs-wasmworker.min.wasm",
-            }
+      removeListeners()
 
-            const player = IVSPlayer.create(config);
-            player.attachHTMLVideoElement(videoEl.current);
+      if (IVSPlayer.isPlayerSupported) {
+        player.attachHTMLVideoElement(videoEl.current)
+        createListeners();
+      }
 
-            videoEl.current.playbackRate = playbackRate
-            
-            if(playing) {
-              player.play()
-            }
-
-            player.load(url);
-            return
-        }
-
-    }, [])
+    }, [videoEl, playerRef])
 
     return (
       <video
@@ -51,13 +76,9 @@ function AmazonIvsReact({
           controls={controls}
           ref={videoEl}
           muted={muted}
-          autoPlay={playing}
-          onEnded={e => onEnded(e)}
-          onProgress={e => onProgress(e)}
-          onDurationChange={e => onDuration(e)}
           playsInline
       />
     );
-}
+});
 
 export default AmazonIvsReact;
