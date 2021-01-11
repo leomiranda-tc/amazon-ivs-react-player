@@ -1,5 +1,5 @@
 import AmazonIvsReact from './amazon-ivs-react-player/index';
-import {useEffect, useState, useRef} from 'react';
+import {useState} from 'react';
 
 function App() {
 
@@ -19,7 +19,7 @@ function App() {
         width="100%"
         height="100%"
         ref={setPlayer}
-        controls={false}
+        controls={true}
         url={url}
         playing={playing}
         playbackRate={rate}

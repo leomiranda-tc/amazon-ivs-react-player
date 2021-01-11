@@ -19,10 +19,8 @@ const AmazonIvsReact = forwardRef(({
   onProgress = (e) => {},
   onDuration = (e) => {},
   onEnded = () => {},
-  playerRef
-}, ref) => {
+}, ref = (e) => {}) => {
 
-    // const videoEl = useRef(null);
     const videoEl = useRef(null);
 
     const round = (number, round = 0) => {
@@ -30,8 +28,8 @@ const AmazonIvsReact = forwardRef(({
       return Math.round(number*factor) / factor
     }
 
-    // monitoring ------
-    const createListeners = () => {
+
+    const addListeners = () => {
       player.addEventListener(IVSPlayer.PlayerEventType.DURATION_CHANGED, (e) => {
         onDuration(round(e, 4));
       })
@@ -46,6 +44,8 @@ const AmazonIvsReact = forwardRef(({
         }
       })
     }
+
+
     const removeListeners = () => {
       player.removeEventListener(IVSPlayer.PlayerEventType.DURATION_CHANGED, (e) => {})
       player.removeEventListener(IVSPlayer.PlayerEventType.TIME_UPDATE, (e) => {})
@@ -54,20 +54,27 @@ const AmazonIvsReact = forwardRef(({
 
     // effects -----
     useEffect(() => (playing ? player.play() : player.pause()), [playing])
+    
     useEffect(() => player.setPlaybackRate(playbackRate), [playbackRate])
+    
     useEffect(() => player.load(url), [url])
+    
     useEffect(() => {
-
+      removeListeners();
+      addListeners();
+    }, [onProgress, onDuration, onEnded])
+    
+    useEffect(() => {
       ref(player)
-
       removeListeners()
 
       if (IVSPlayer.isPlayerSupported) {
         player.attachHTMLVideoElement(videoEl.current)
-        createListeners();
+        addListeners();
       }
+    }, [videoEl])
 
-    }, [videoEl, playerRef])
+
 
     return (
       <video
