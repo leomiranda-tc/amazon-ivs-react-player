@@ -8,10 +8,6 @@ function App() {
   const [rate, setRate] = useState(1);
   const [url, setUrl] = useState("https://fcc3ddae59ed.us-west-2.playback.live-video.net/api/video/v1/us-west-2.893648527354.channel.xhP3ExfcX8ON.m3u8");
 
-  useEffect(()=>{
-    console.log(player);
-  },[player])
-
   return (
     <div>
 
@@ -22,14 +18,11 @@ function App() {
       <AmazonIvsReact
         width="100%"
         height="100%"
-  
         ref={setPlayer}
-        controls={true}
-  
+        controls={false}
         url={url}
         playing={playing}
         playbackRate={rate}
-  
         onProgress={(e) => console.log("progress", e)}
         onDuration={(e) => console.log("duration", e)}
         onEnded={(player) => player.seekTo(0)}
