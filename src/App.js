@@ -1,31 +1,39 @@
 import AmazonIvsReact from './amazon-ivs-react-player/index';
-import {useState} from 'react';
+import {useState, useMemo, useCallback} from 'react';
+import * as IVSPlayer from 'amazon-ivs-player';
 
 function App() {
 
-  const [player, setPlayer] = useState();
-  const [playing, setPlaying] = useState(true);
-  const [rate, setRate] = useState(1);
-  const [url, setUrl] = useState("https://fcc3ddae59ed.us-west-2.playback.live-video.net/api/video/v1/us-west-2.893648527354.channel.xhP3ExfcX8ON.m3u8");
+  const [qualities, setQualities] = useState([]);
+  const [url] = useState("https://fcc3ddae59ed.us-west-2.playback.live-video.net/api/video/v1/us-west-2.893648527354.channel.xhP3ExfcX8ON.m3u8");
+
+  const player = useMemo(() => IVSPlayer.create({
+    wasmWorker: "https://player.live-video.net/1.2.0/amazon-ivs-wasmworker.min.js",
+    wasmBinary: "https://player.live-video.net/1.2.0/amazon-ivs-wasmworker.min.wasm",
+  }),[]);
+
+  const onReady = useCallback(() => {
+    player.setAutoQualityMode(false)
+    setQualities(player.getQualities())
+  }, [player, setQualities]);
 
   return (
     <div>
 
-      <button onClick={()=>setPlaying(!playing)}>Play/Pause</button>
-      <button onClick={()=>setRate(1.5)}>rate 1.5x</button>
-      <button onClick={()=>player.seekTo(0)}>seek To</button>
+      <button onClick={() => console.log(player.getQuality())}>Get my quality now</button>
+
+      {qualities.map((quality, key) => (
+        <button key={`quality-${key}`} onClick={() => player.setQuality(quality, false)} >{quality.name}</button>
+      ))}
 
       <AmazonIvsReact
+        player={player}
         width="100%"
         height="100%"
-        ref={setPlayer}
         controls={true}
         url={url}
-        playing={playing}
-        playbackRate={rate}
-        onProgress={(e) => console.log("progress", e)}
-        onDuration={(e) => console.log("duration", e)}
-        onEnded={(player) => player.seekTo(0)}
+        playing={true}
+        onReady={onReady}
       />
     </div>
   );

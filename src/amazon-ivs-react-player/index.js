@@ -1,14 +1,13 @@
-import React, {useEffect, useRef, useState, forwardRef} from 'react';
+import React, {useEffect, useRef, useCallback} from 'react';
 import * as IVSPlayer from 'amazon-ivs-player';
 
 
-const config = {
-  wasmWorker: "https://player.live-video.net/1.2.0/amazon-ivs-wasmworker.min.js",
-  wasmBinary: "https://player.live-video.net/1.2.0/amazon-ivs-wasmworker.min.wasm",
+const round = (number, round = 0) => {
+  let factor = Math.pow(10, round);
+  return Math.round(number*factor) / factor
 }
-const player = IVSPlayer.create(config);
 
-const AmazonIvsReact = forwardRef(({
+const AmazonIvsReact = ({
   width = 'auto',
   height = 300,
   controls = false,
@@ -19,62 +18,58 @@ const AmazonIvsReact = forwardRef(({
   onProgress = (e) => {},
   onDuration = (e) => {},
   onEnded = () => {},
-}, ref = (e) => {}) => {
+  onReady = () => {},
+  player,
+}) => {
 
     const videoEl = useRef(null);
 
-    const round = (number, round = 0) => {
-      let factor = Math.pow(10, round);
-      return Math.round(number*factor) / factor
-    }
+    const durationChanged = useCallback((e) => {
+      onDuration(round(e, 4));
+    }, [onDuration])
 
-
-    const addListeners = () => {
-      player.addEventListener(IVSPlayer.PlayerEventType.DURATION_CHANGED, (e) => {
-        onDuration(round(e, 4));
-      })
+    const timeUpdate = useCallback((e) => {
+      let duration = player.getDuration()
+      onProgress({played: round(e / duration, 4), playedSeconds: round(e, 4)});
       
-      player.addEventListener(IVSPlayer.PlayerEventType.TIME_UPDATE, (e) => {
-        let duration = player.getDuration()
-        onProgress({played: round(e / duration, 4), playedSeconds: round(e, 4)});
-        
-        if (player.getState() == "Ended") {
-          player.pause();
-          onEnded(player);
-        }
-      })
-    }
+      if (player.getState() === "Ended") {
+        player.pause();
+        onEnded(player);
+      }
+    },[onEnded, onProgress, player])
 
+    const addListeners = useCallback(() => {
+      player.addEventListener(IVSPlayer.PlayerEventType.DURATION_CHANGED, durationChanged)
+      player.addEventListener(IVSPlayer.PlayerState.READY, onReady)
+      player.addEventListener(IVSPlayer.PlayerEventType.TIME_UPDATE, timeUpdate)
+    },[durationChanged, timeUpdate, onReady, player])
 
-    const removeListeners = () => {
-      player.removeEventListener(IVSPlayer.PlayerEventType.DURATION_CHANGED, (e) => {})
-      player.removeEventListener(IVSPlayer.PlayerEventType.TIME_UPDATE, (e) => {})
-    }
+    const removeListeners = useCallback(() => {
+      player.removeEventListener(IVSPlayer.PlayerEventType.DURATION_CHANGED, durationChanged)
+      player.removeEventListener(IVSPlayer.PlayerState.READY, onReady)
+      player.removeEventListener(IVSPlayer.PlayerEventType.TIME_UPDATE, timeUpdate)
+    },[durationChanged, timeUpdate, onReady, player])
 
 
     // effects -----
-    useEffect(() => (playing ? player.play() : player.pause()), [playing])
+    useEffect(() => (playing ? player.play() : player.pause()), [playing,player])
     
-    useEffect(() => player.setPlaybackRate(playbackRate), [playbackRate])
+    useEffect(() => player.setPlaybackRate(playbackRate), [playbackRate,player])
     
-    useEffect(() => player.load(url), [url])
+    useEffect(() => player.load(url), [url, player])
     
     useEffect(() => {
-      removeListeners();
       addListeners();
-    }, [onProgress, onDuration, onEnded])
+      return removeListeners;
+    }, [addListeners, removeListeners])
     
     useEffect(() => {
-      ref(player)
-      removeListeners()
-
       if (IVSPlayer.isPlayerSupported) {
         player.attachHTMLVideoElement(videoEl.current)
         addListeners();
       }
-    }, [videoEl])
-
-
+      return removeListeners
+    }, [videoEl, addListeners, removeListeners,player])
 
     return (
       <video
@@ -86,6 +81,6 @@ const AmazonIvsReact = forwardRef(({
           playsInline
       />
     );
-});
+};
 
 export default AmazonIvsReact;
