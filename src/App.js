@@ -13,8 +13,15 @@ function App() {
   }),[]);
 
   const onReady = useCallback(() => {
-    player.setAutoQualityMode(false)
-    setQualities(player.getQualities())
+    const qualities = player.getQualities()
+
+    if (qualities[0].name !== "unknown") {
+      player.setAutoQualityMode(false)
+      setQualities(player.getQualities())
+
+      return
+    }
+    
   }, [player, setQualities]);
 
   return (
